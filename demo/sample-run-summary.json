@@ -1,0 +1,53 @@
+{
+    "adapter":  "amazon",
+    "base_url":  "https://www.amazon.com/",
+    "checkpoint":  {
+                       "discovery_complete":  true,
+                       "last_item_id":  21,
+                       "processed":  3
+                   },
+    "completed_at":  "Sat, 11 Jul 2026 08:30:51 GMT",
+    "created_at":  "Sat, 11 Jul 2026 08:30:20 GMT",
+    "errors":  0,
+    "id":  6,
+    "items":  {
+                  "new":  3
+              },
+    "options":  {
+                    "max_products":  3,
+                    "request_delay_seconds":  2
+                },
+    "products_discovered":  3,
+    "products_new":  3,
+    "products_processed":  3,
+    "products_unavailable":  0,
+    "products_unchanged":  0,
+    "products_updated":  0,
+    "requested_by":  "amazon-validation",
+    "run_type":  "full",
+    "site_code":  "amazon-us",
+    "site_id":  2,
+    "site_name":  "Amazon US Public Product Pages",
+    "site_settings":  {
+                          "default_delay_seconds":  2,
+                          "respect_robots":  true,
+                          "seed_urls":  [
+                                            "https://www.amazon.com/dp/B0GNT5KMN7",
+                                            "https://www.amazon.com/dp/B0CQMRKRV5",
+                                            "https://www.amazon.com/dp/B085WS7H6K"
+                                        ]
+                      },
+    "started_at":  "Sat, 11 Jul 2026 08:30:20 GMT",
+    "status":  "completed",
+    "summary":  {
+                    "items":  {
+                                  "new":  3
+                              },
+                    "resumable":  true,
+                    "run_id":  6,
+                    "run_type":  "full",
+                    "site":  "amazon-us",
+                    "status":  "completed",
+                    "unavailable":  0
+                }
+}

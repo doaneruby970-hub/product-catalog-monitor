@@ -1,0 +1,183 @@
+{
+  "id": "product-catalog-monitor",
+  "name": "Product Catalog Monitor",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "Manual Run",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [-720, -100]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{"field": "weeks", "weeksInterval": 1, "triggerAtDay": [1], "triggerAtHour": 9}]
+        }
+      },
+      "id": "weekly-trigger",
+      "name": "Weekly Monday 09:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [-720, 100]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {"id": "site", "name": "site", "value": "amazon-us", "type": "string"},
+            {"id": "run_type", "name": "run_type", "value": "incremental", "type": "string"},
+            {"id": "max_products", "name": "max_products", "value": 0, "type": "number"}
+          ]
+        }
+      },
+      "id": "run-config",
+      "name": "Run Configuration",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [-480, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://scraper:5000/runs",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"site\": $json.site,\n  \"run_type\": $json.run_type,\n  \"requested_by\": \"n8n\",\n  \"options\": {\n    \"max_products\": $json.max_products,\n    \"request_delay_seconds\": 5,\n    \"missing_threshold\": 2\n  }\n}",
+        "options": {"timeout": 30000}
+      },
+      "id": "create-run",
+      "name": "Create Catalog Run",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-240, 0]
+    },
+    {
+      "parameters": {"amount": 10, "unit": "seconds"},
+      "id": "wait",
+      "name": "Wait 10 Seconds",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [0, 0],
+      "webhookId": "catalog-monitor-poll"
+    },
+    {
+      "parameters": {
+        "url": "=http://scraper:5000/runs/{{ $('Create Catalog Run').item.json.run_id }}",
+        "options": {"timeout": 30000}
+      },
+      "id": "get-status",
+      "name": "Get Run Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [240, 0]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {"caseSensitive": true, "leftValue": "", "typeValidation": "strict"},
+          "conditions": [
+            {
+              "id": "finished-condition",
+              "leftValue": "={{ ['completed', 'completed_with_errors', 'failed', 'cancelled'].includes($json.status) }}",
+              "rightValue": true,
+              "operator": {"type": "boolean", "operation": "true", "singleValue": true}
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "is-finished",
+      "name": "Run Finished?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [480, 0]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {"caseSensitive": true, "leftValue": "", "typeValidation": "strict"},
+          "conditions": [
+            {
+              "id": "success-condition",
+              "leftValue": "={{ ['completed', 'completed_with_errors'].includes($json.status) }}",
+              "rightValue": true,
+              "operator": {"type": "boolean", "operation": "true", "singleValue": true}
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "is-success",
+      "name": "Successful?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [720, -80]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {"id": "summary-status", "name": "status", "value": "={{ $json.status }}", "type": "string"},
+            {"id": "summary-run", "name": "run_id", "value": "={{ $json.id }}", "type": "number"},
+            {"id": "summary-found", "name": "discovered", "value": "={{ $json.products_discovered }}", "type": "number"},
+            {"id": "summary-new", "name": "new", "value": "={{ $json.products_new }}", "type": "number"},
+            {"id": "summary-updated", "name": "updated", "value": "={{ $json.products_updated }}", "type": "number"},
+            {"id": "summary-unchanged", "name": "unchanged", "value": "={{ $json.products_unchanged }}", "type": "number"},
+            {"id": "summary-unavailable", "name": "unavailable", "value": "={{ $json.products_unavailable }}", "type": "number"},
+            {"id": "summary-errors", "name": "errors", "value": "={{ $json.errors }}", "type": "number"},
+            {"id": "json-export", "name": "json_export", "value": "=http://localhost:5000/runs/{{ $json.id }}/export/json", "type": "string"},
+            {"id": "csv-export", "name": "csv_export", "value": "=http://localhost:5000/runs/{{ $json.id }}/export/csv", "type": "string"}
+          ]
+        }
+      },
+      "id": "success-summary",
+      "name": "Run Summary",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [960, -160]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {"id": "failure-status", "name": "status", "value": "={{ $json.status }}", "type": "string"},
+            {"id": "failure-run", "name": "run_id", "value": "={{ $json.id }}", "type": "number"},
+            {"id": "failure-summary", "name": "details", "value": "={{ JSON.stringify($json.summary) }}", "type": "string"}
+          ]
+        }
+      },
+      "id": "failure-summary",
+      "name": "Failure Summary",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [960, 20]
+    }
+  ],
+  "connections": {
+    "Manual Run": {"main": [[{"node": "Run Configuration", "type": "main", "index": 0}]]},
+    "Weekly Monday 09:00": {"main": [[{"node": "Run Configuration", "type": "main", "index": 0}]]},
+    "Run Configuration": {"main": [[{"node": "Create Catalog Run", "type": "main", "index": 0}]]},
+    "Create Catalog Run": {"main": [[{"node": "Wait 10 Seconds", "type": "main", "index": 0}]]},
+    "Wait 10 Seconds": {"main": [[{"node": "Get Run Status", "type": "main", "index": 0}]]},
+    "Get Run Status": {"main": [[{"node": "Run Finished?", "type": "main", "index": 0}]]},
+    "Run Finished?": {
+      "main": [
+        [{"node": "Successful?", "type": "main", "index": 0}],
+        [{"node": "Wait 10 Seconds", "type": "main", "index": 0}]
+      ]
+    },
+    "Successful?": {
+      "main": [
+        [{"node": "Run Summary", "type": "main", "index": 0}],
+        [{"node": "Failure Summary", "type": "main", "index": 0}]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {"executionOrder": "v1", "timezone": "America/Chicago"},
+  "versionId": "d034271f-7449-4f42-91fb-5ca3f520d71b",
+  "meta": {"templateCredsSetupCompleted": true},
+  "tags": []
+}

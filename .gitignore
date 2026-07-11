@@ -1,0 +1,29 @@
+# Local browser profiles contain cookies, account sessions, history, and credentials.
+browser-profile/
+**/browser-profile/
+
+# Local secrets and environment overrides.
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+
+# Python runtime artifacts.
+__pycache__/
+**/__pycache__/
+*.pyc
+
+# Local runtime output and generated validation data.
+*.log
+scraper/logs/
+exports/
+demo/database-review.txt
+
+# Internal development and continuation notes are not part of the public handoff.
+CONTEXT_HANDOFF.md
+LEARNING_PLAN.md
+PROJECT_SUMMARY.md
+n8n_learning_notes.md
+n8n_scraping_guide.md

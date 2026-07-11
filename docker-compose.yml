@@ -1,0 +1,71 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: catalog_monitor_db
+    environment:
+      POSTGRES_DB: upwork_demo
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/001-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d upwork_demo"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  scraper:
+    build: ./scraper
+    container_name: catalog_monitor_scraper
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/upwork_demo
+      API_PORT: 5000
+      LOG_LEVEL: INFO
+      BROWSER_BACKEND: cdp
+      CDP_URL: http://host.docker.internal:9223
+      HEADLESS: "true"
+      PAGE_LOAD_WAIT_MS: 15000
+      REQUEST_DELAY_SECONDS: 2
+      MAX_RETRIES: 3
+      MISSING_THRESHOLD: 2
+      EXPORT_DIR: /app/exports
+    ports:
+      - "5000:5000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./scraper:/app
+      - ./exports:/app/exports
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health', timeout=5)"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: catalog_monitor_n8n
+    environment:
+      N8N_HOST: 0.0.0.0
+      N8N_PORT: 5678
+      N8N_PROTOCOL: http
+      NODE_ENV: production
+      WEBHOOK_URL: http://localhost:5678/
+      GENERIC_TIMEZONE: America/Chicago
+      N8N_DIAGNOSTICS_ENABLED: "false"
+    ports:
+      - "5678:5678"
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./n8n:/workflows:ro
+    depends_on:
+      scraper:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  n8n_data:
