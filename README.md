@@ -4,6 +4,8 @@ A production-oriented catalog extraction and monitoring system built with n8n, P
 
 This project monitors the Amazon.com car-audio catalog with a hybrid architecture. It discovers catalog pages, extracts JavaScript-rendered product details, records change history, and exports normalized JSON or CSV data.
 
+For a client-facing summary of the business problem, delivery scope, and Upwork-relevant proof points, see [UPWORK_CASE_STUDY.md](UPWORK_CASE_STUDY.md).
+
 ## Highlights
 
 - **n8n workflow:** manual execution, weekly scheduling, status polling, and run summaries.
